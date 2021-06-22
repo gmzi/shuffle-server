@@ -60,60 +60,24 @@ app.post('/login', (req, res) => {
     });
 });
 
-async function getSaved(caller, active = true, offset = 0, allTracks = []) {
-  if (active) {
-    return await caller
-      .getMySavedTracks({ limit: 20, offset: offset })
-      .then(async (res) => {
-        if (!res.body.next) {
-          active = false;
-          return allTracks;
-        }
-        res.body.items.map((t) => allTracks.push(t));
-        return await getSaved(caller, active, (offset += 20), allTracks);
-      });
-  }
-  console.log('vino por acá');
-  return Promise.all(calls);
-}
-
-// app.get('/tracks', async (req, res) => {
-//   const spotifyApi = new SpotifyWebApi();
-//   spotifyApi.setAccessToken(token);
-//   const rawTracks = await getSaved(spotifyApi);
-//   const userTracks = rawTracks.map((track) => {
-//     const smallestAlbumImage = track.track.album.images.reduce(
-//       (smallest, image) => {
-//         if (image.height < smallest.height) return image;
-//         return smallest;
-//       },
-//       track.track.album.images[0]
-//     );
-//     const artists = track.track.artists.map((a) => {
-//       return a.name;
-//     });
-//     return {
-//       artist: artists,
-//       title: track.track.name,
-//       uri: track.track.uri,
-//       albumUrl: smallestAlbumImage.url,
-//     };
-//   });
-
-//   res.json({ userTracks });
-// });
-
 app.get('/tracks', async function (req, res) {
-  async function retrieveTracks(promise) {
-    return await promise.then((res) => {
-      return res.data.items.map((i) => {
-        return i.track;
-      });
-    });
-  }
+  const tracks = [];
 
   const access_token = token;
 
+  // GATHER ALL LIKED TRACKS
+
+  const spotifyApi = new SpotifyWebApi();
+  spotifyApi.setAccessToken(access_token);
+
+  const likedTracks = await getLikedTracks(spotifyApi);
+
+  // POUR LIKED TRACKS IN MAIN LIST:
+  for (let item of likedTracks) {
+    tracks.push(item.track);
+  }
+
+  // GATHER TRACKS FROM ALL PLAYLISTS:
   const playlists = await getPlaylists(access_token);
 
   const promises = {};
@@ -134,23 +98,20 @@ app.get('/tracks', async function (req, res) {
     allTracksRaw[key] = await promises[key];
   }
 
-  // console.log(allTracksRaw['6mQRzik2ep7cGp0JqbHS1A'].data.items);
-
   const items = {};
 
   for (let track in allTracksRaw) {
     items[track] = allTracksRaw[track].data.items;
   }
 
-  const tracks = [];
-
+  // POUR PLAYLISTS TRACKS IN MAIN LIST:
   for (let key in items) {
     for (let obj in items[key]) {
-      // console.log(items[key][obj].track);
       tracks.push(items[key][obj].track);
     }
   }
 
+  // PREPARE MAIN LIST TO BE SENT TO CLIENT:
   const readyTracks = {};
 
   tracks.map((track, index) => {
@@ -166,42 +127,6 @@ app.get('/tracks', async function (req, res) {
   });
 
   return res.json(readyTracks);
-  // const getTracks = myPlaylists.data.items.map(async (item) => {
-  //   const url = `https://api.spotify.com/v1/playlists/${item.id}/tracks`;
-  //   const response = await axios.get(url, {
-  //     headers: { Authorization: `Bearer ${access_token}` },
-  //     responseType: 'json',
-  //   });
-  //   return response.data.items.map((item) => item.track);
-  // });
-
-  // const allPlaylistsTracks = await Promise.all(getTracks);
-
-  // const cleanTracks = allPlaylistsTracks.map((track) => {
-  //   if (track.length) {
-  //     const smallestAlbumImage = track.album.images.reduce(
-  //       (smallest, image) => {
-  //         if (image.height < smallest.height) return image;
-  //         return smallest;
-  //       },
-  //       track.track.album.images[0]
-  //     );
-  //     const artists = track.track.artists.map((a) => {
-  //       return a.name;
-  //     });
-  //     return {
-  //       artist: artists,
-  //       title: track.track.name,
-  //       uri: track.track.uri,
-  //       albumUrl: smallestAlbumImage.url,
-  //     };
-  //   } else {
-  //     return 'mierda';
-  //   }
-  // });
-  // console.log(cleanTracks);
-
-  // return res.send('hid');
 });
 
 async function getPlaylists(access_token, offset = 0, items = []) {
@@ -219,6 +144,27 @@ async function getPlaylists(access_token, offset = 0, items = []) {
         return items;
       }
     });
+}
+
+async function getLikedTracks(
+  caller,
+  active = true,
+  offset = 0,
+  allTracks = []
+) {
+  if (active) {
+    return await caller
+      .getMySavedTracks({ limit: 20, offset: offset })
+      .then(async (res) => {
+        if (!res.body.next) {
+          active = false;
+          return allTracks;
+        }
+        res.body.items.map((t) => allTracks.push(t));
+        return await getLikedTracks(caller, active, (offset += 20), allTracks);
+      });
+  }
+  return Promise.all(calls);
 }
 
 app.get('/hola', function (req, res) {
