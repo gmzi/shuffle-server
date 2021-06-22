@@ -3,9 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
-const lyricsFinder = require('lyrics-finder');
 const SpotifyWebApi = require('spotify-web-api-node');
-const e = require('express');
+const db = require('./database/db');
 
 const app = express();
 app.use(cors());
@@ -167,8 +166,24 @@ async function getLikedTracks(
   return Promise.all(calls);
 }
 
+app.get('/count', async function (req, res) {
+  const now = new Date();
+  const currentCount = await db.query(`SELECT user_count FROM stats`);
+  const newCount = currentCount.rows.length + 1;
+
+  const addCount = await db.query(
+    `INSERT INTO stats (user_count,
+      login_at)
+  VALUES ($1, $2)
+  RETURNING user_count, login_at`,
+    [newCount, now]
+  );
+  console.log(addCount.rows[0].user_count);
+  return res.json(addCount.rows[0]);
+});
+
 app.get('/hola', function (req, res) {
-  return res.send('hi');
+  return res.send('hola como andas');
 });
 
 app.listen(3001);
