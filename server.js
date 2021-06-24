@@ -178,7 +178,6 @@ app.get('/count', async function (req, res) {
   RETURNING user_count, login_at`,
     [newCount, now]
   );
-  console.log(addCount.rows[0].user_count);
   return res.json(addCount.rows[0]);
 });
 
