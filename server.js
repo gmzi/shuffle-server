@@ -65,16 +65,17 @@ app.get('/tracks', async function (req, res) {
   const access_token = token;
 
   // GATHER ALL LIKED TRACKS
+  // (Disabled for development efficiency)
 
-  const spotifyApi = new SpotifyWebApi();
-  spotifyApi.setAccessToken(access_token);
+  // const spotifyApi = new SpotifyWebApi();
+  // spotifyApi.setAccessToken(access_token);
 
-  const likedTracks = await getLikedTracks(spotifyApi);
+  // const likedTracks = await getLikedTracks(spotifyApi);
 
   // POUR LIKED TRACKS IN MAIN LIST:
-  for (let item of likedTracks) {
-    tracks.push(item.track);
-  }
+  // for (let item of likedTracks) {
+  //   tracks.push(item.track);
+  // }
 
   // GATHER TRACKS FROM ALL PLAYLISTS:
   const playlists = await getPlaylists(access_token);
