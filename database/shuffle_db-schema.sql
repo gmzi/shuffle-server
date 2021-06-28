@@ -2,6 +2,7 @@ CREATE TABLE tracks (
   id SERIAL PRIMARY KEY,
   uri TEXT NOT NULL,
   title TEXT NOT NULL,
+  album_url TEXT NOT NULL,
   artist TEXT NOT NULL
 );
 

@@ -11,6 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// SPOTIFY AUTH:
 app.post('/refresh', (req, res) => {
   const refreshToken = req.body.refreshToken;
   const spotifyApi = new SpotifyWebApi({
@@ -59,74 +60,90 @@ app.post('/login', (req, res) => {
     });
 });
 
+// ---------------------------------------------------
+// LOCAL ROUTES:
+
+app.get('/logout', (req, res) => {
+  token = '';
+  return res.json({ token });
+});
+
 app.get('/tracks', async function (req, res) {
   const tracks = [];
 
   const access_token = token;
 
-  // GATHER ALL LIKED TRACKS
-  // (Disabled for development efficiency)
+  try {
+    // GATHER ALL LIKED TRACKS
+    // (Disabled for development efficiency)
 
-  // const spotifyApi = new SpotifyWebApi();
-  // spotifyApi.setAccessToken(access_token);
+    // const spotifyApi = new SpotifyWebApi();
+    // spotifyApi.setAccessToken(access_token);
 
-  // const likedTracks = await getLikedTracks(spotifyApi);
+    // const likedTracks = await getLikedTracks(spotifyApi);
 
-  // POUR LIKED TRACKS IN MAIN LIST:
-  // for (let item of likedTracks) {
-  //   tracks.push(item.track);
-  // }
+    // POUR LIKED TRACKS IN MAIN LIST:
+    // for (let item of likedTracks) {
+    //   tracks.push(item.track);
+    // }
 
-  // GATHER TRACKS FROM ALL PLAYLISTS:
-  const playlists = await getPlaylists(access_token);
+    // GATHER TRACKS FROM ALL PLAYLISTS:
+    const playlists = await getPlaylists(access_token);
 
-  const promises = {};
+    const promises = {};
 
-  for (let id of playlists) {
-    promises[id] = axios.get(
-      `https://api.spotify.com/v1/playlists/${id}/tracks`,
-      {
-        headers: { Authorization: `Bearer ${access_token}` },
-        responseType: 'json',
+    for (let id of playlists) {
+      promises[id] = axios.get(
+        `https://api.spotify.com/v1/playlists/${id}/tracks`,
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
+          responseType: 'json',
+        }
+      );
+    }
+
+    const allTracksRaw = {};
+
+    for (let key in promises) {
+      allTracksRaw[key] = await promises[key];
+    }
+
+    const items = {};
+
+    for (let track in allTracksRaw) {
+      items[track] = allTracksRaw[track].data.items;
+    }
+
+    // POUR PLAYLISTS TRACKS IN MAIN LIST:
+    for (let key in items) {
+      for (let obj in items[key]) {
+        tracks.push(items[key][obj].track);
       }
+    }
+
+    // PREPARE MAIN LIST TO BE SENT TO CLIENT:
+    const readyTracks = {};
+
+    tracks.map((track, index) => {
+      readyTracks[index] = {
+        artists: track.artists.map((a) => a.name),
+        title: track.name,
+        uri: track.uri,
+        albumUrl:
+          track.album.images.length && track.album.images[1].url
+            ? track.album.images[1].url
+            : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+      };
+    });
+
+    return res.json(readyTracks);
+  } catch (e) {
+    console.log(
+      'server failed gathering tracks',
+      e.response.status,
+      e.response.headers
     );
   }
-
-  const allTracksRaw = {};
-
-  for (let key in promises) {
-    allTracksRaw[key] = await promises[key];
-  }
-
-  const items = {};
-
-  for (let track in allTracksRaw) {
-    items[track] = allTracksRaw[track].data.items;
-  }
-
-  // POUR PLAYLISTS TRACKS IN MAIN LIST:
-  for (let key in items) {
-    for (let obj in items[key]) {
-      tracks.push(items[key][obj].track);
-    }
-  }
-
-  // PREPARE MAIN LIST TO BE SENT TO CLIENT:
-  const readyTracks = {};
-
-  tracks.map((track, index) => {
-    readyTracks[index] = {
-      artists: track.artists.map((a) => a.name),
-      title: track.name,
-      uri: track.uri,
-      albumUrl:
-        track.album.images.length && track.album.images[1].url
-          ? track.album.images[1].url
-          : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
-    };
-  });
-
-  return res.json(readyTracks);
 });
 
 async function getPlaylists(access_token, offset = 0, items = []) {
@@ -167,11 +184,19 @@ async function getLikedTracks(
   return Promise.all(calls);
 }
 
+// ---------------------------------------------------------------------
+// STATS ROUTES:
 app.get('/count', async function (req, res) {
+  const getCount = await db.query(
+    `SELECT user_count FROM stats ORDER BY user_count DESC LIMIT 1;`
+  );
+  return res.json(getCount.rows[0]);
+});
+
+app.get('/count-add', async function (req, res) {
   const now = new Date();
   const currentCount = await db.query(`SELECT user_count FROM stats`);
   const newCount = currentCount.rows.length + 1;
-
   const addCount = await db.query(
     `INSERT INTO stats (user_count,
       login_at)
@@ -180,6 +205,32 @@ app.get('/count', async function (req, res) {
     [newCount, now]
   );
   return res.json(addCount.rows[0]);
+});
+
+app.get('/track', async function (req, res) {
+  // TODO: add timestamp to DB so as to retrieve last track by date instead of id.
+  const getTrack = await db.query(
+    `SELECT uri, title, album_url, artist
+      FROM tracks ORDER BY id DESC LIMIT 1`
+  );
+  return res.json(getTrack.rows[0]);
+});
+
+app.post('/track-add', async function (req, res) {
+  try {
+    const newTrack = req.body.track;
+    if (!newTrack.artists) {
+      newTrack.artists = ['none'];
+    }
+    const saveTrack = await db.query(
+      `INSERT INTO tracks (uri, title, album_url, artist)
+    VALUES ($1, $2, $3, $4)`,
+      [newTrack.uri, newTrack.title, newTrack.albumUrl, newTrack.artists[0]]
+    );
+    return;
+  } catch (e) {
+    console.log('failed saving track in db', e);
+  }
 });
 
 app.get('/hola', function (req, res) {

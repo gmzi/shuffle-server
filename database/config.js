@@ -5,11 +5,11 @@ require('dotenv').config();
 // Use dev database, testing database, or via env var, production database
 function getDatabaseUri() {
   return process.env.NODE_ENV === 'test'
-    ? 'shuffler_test'
-    : process.env.DATABASE_URL || 'shuffler';
+    ? 'shuffle_test'
+    : process.env.DATABASE_URL || 'shuffle_db';
 }
 
-console.log('shuffler config:');
+console.log('shuffle_db config:');
 console.log('Database:', getDatabaseUri());
 console.log('---');
 
