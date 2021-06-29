@@ -60,7 +60,7 @@ app.post('/login', (req, res) => {
     });
 });
 
-// ---------------------------------------------------
+// -----------------------------------------------------------
 // LOCAL ROUTES:
 
 app.get('/logout', (req, res) => {
@@ -77,15 +77,15 @@ app.get('/tracks', async function (req, res) {
     // GATHER ALL LIKED TRACKS
     // (Disabled for development efficiency)
 
-    // const spotifyApi = new SpotifyWebApi();
-    // spotifyApi.setAccessToken(access_token);
+    const spotifyApi = new SpotifyWebApi();
+    spotifyApi.setAccessToken(access_token);
 
-    // const likedTracks = await getLikedTracks(spotifyApi);
+    const likedTracks = await getLikedTracks(spotifyApi);
 
     // POUR LIKED TRACKS IN MAIN LIST:
-    // for (let item of likedTracks) {
-    //   tracks.push(item.track);
-    // }
+    for (let item of likedTracks) {
+      tracks.push(item.track);
+    }
 
     // GATHER TRACKS FROM ALL PLAYLISTS:
     const playlists = await getPlaylists(access_token);
@@ -135,7 +135,6 @@ app.get('/tracks', async function (req, res) {
             : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
       };
     });
-
     return res.json(readyTracks);
   } catch (e) {
     console.log(
@@ -146,6 +145,8 @@ app.get('/tracks', async function (req, res) {
   }
 });
 
+// ---------------------------------------------------------------------
+// Helper functions
 async function getPlaylists(access_token, offset = 0, items = []) {
   return await axios
     .get('https://api.spotify.com/v1/me/playlists', {
@@ -185,7 +186,8 @@ async function getLikedTracks(
 }
 
 // ---------------------------------------------------------------------
-// STATS ROUTES:
+// DATABASE ROUTES:
+
 app.get('/count', async function (req, res) {
   const getCount = await db.query(
     `SELECT user_count FROM stats ORDER BY user_count DESC LIMIT 1;`
