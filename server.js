@@ -60,6 +60,25 @@ app.post('/login', (req, res) => {
     });
 });
 
+app.get('/token', async function (req, res) {
+  const credentials = `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`;
+  const encodedCreds = Buffer.from(credentials).toString('base64');
+  try {
+    const spotiToken = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      'grant_type=client_credentials',
+      {
+        headers: { Authorization: `Basic ${encodedCreds}` },
+        responseType: 'json',
+      }
+    );
+
+    return res.json(spotiToken.data);
+  } catch (e) {
+    console.log('token request failed', e);
+  }
+});
+
 // -----------------------------------------------------------
 // LOCAL ROUTES:
 
@@ -209,8 +228,7 @@ app.get('/count-add', async function (req, res) {
   return res.json(addCount.rows[0]);
 });
 
-app.get('/track', async function (req, res) {
-  // TODO: add timestamp to DB so as to retrieve last track by date instead of id.
+app.get('/track-last', async function (req, res) {
   const getTrack = await db.query(
     `SELECT uri, title, album_url, artist
       FROM tracks ORDER BY id DESC LIMIT 1`
@@ -218,16 +236,99 @@ app.get('/track', async function (req, res) {
   return res.json(getTrack.rows[0]);
 });
 
+app.get('/track-seeder', async function (req, res) {
+  // GET REFERENCE TRACK FROM DB:
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+
+  const seedTrackQuery = await db.query(
+    `SELECT uri FROM tracks
+      JOIN plays ON plays.track = tracks.id
+        WHERE EXTRACT(hour FROM plays.date) >= ${hour - 1} 
+        AND EXTRACT(hour FROM plays.date) < ${hour + 1}
+        AND EXTRACT (isodow FROM plays.date) = ${day}`
+  );
+  const seedTrackID = seedTrackQuery.rows[0].uri.replace('spotify:track:', '');
+
+  // GET AUTH TOKEN FROM SPOTIFY:
+  const credentials = `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`;
+  const encodedCreds = Buffer.from(credentials).toString('base64');
+  const tokenReq = await axios.post(
+    'https://accounts.spotify.com/api/token',
+    'grant_type=client_credentials',
+    {
+      headers: { Authorization: `Basic ${encodedCreds}` },
+      responseType: 'json',
+    }
+  );
+  const token = tokenReq.data.access_token;
+
+  // GET SEEDTRACK METADATA:
+  const trackDataReq = await axios.get(
+    `https://api.spotify.com/v1/tracks/${seedTrackID}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  // const genreSeedsReq = await axios.get(
+  //   `https://api.spotify.com/v1/recommendations/available-genre-seeds`,
+  //   {
+  //     headers: { Authorization: `Bearer ${token}` },
+  //   }
+  // );
+
+  // console.log(genreSeedsReq.data);
+
+  const artistIDS = trackDataReq.data.artists.map((a) => a.id);
+  console.log(artistIDS);
+  console.log(seedTrackID);
+
+  const albumArtistIDS = trackDataReq.data.album.artists.map((a) => a.id);
+
+  // TRY TO MAKE THIS PASS:
+
+  // const reccomendationsReq = await axios.get(
+  //   `https://api.spotify.com/v1/recommendations`,
+  //   {
+  //     params: {
+  //       seed_genres: ['classical', 'disco', 'jazz', 'piano', 'happy'],
+  //       seed_artists: artistIDS,
+  //       seed_tracks: [seedTrackID],
+  //       // min_popularity: 50,
+  //     },
+  //     headers: { Authorization: `Bearer ${token}` },
+  //     responseType: 'json',
+  //   }
+  // );
+  // console.log(reccomendationsReq.data);
+
+  return res.send('done');
+});
+
 app.post('/track-add', async function (req, res) {
   try {
+    const now = new Date();
     const newTrack = req.body.track;
-    if (!newTrack.artists) {
-      newTrack.artists = ['none'];
+    const checkTrack = await db.query(
+      `SELECT id FROM tracks WHERE uri LIKE '${newTrack.uri}'`
+    );
+    let trackId;
+    if (!checkTrack.rows[0]) {
+      const saveTrack = await db.query(
+        `INSERT INTO tracks (uri, title, album_url, artist)
+    VALUES ($1, $2, $3, $4) RETURNING id`,
+        [newTrack.uri, newTrack.title, newTrack.albumUrl, newTrack.artists]
+      );
+      trackId = saveTrack.rows[0].id;
+    } else {
+      trackId = checkTrack.rows[0].id;
     }
-    const saveTrack = await db.query(
-      `INSERT INTO tracks (uri, title, album_url, artist)
-    VALUES ($1, $2, $3, $4)`,
-      [newTrack.uri, newTrack.title, newTrack.albumUrl, newTrack.artists[0]]
+    const savePlay = await db.query(
+      `INSERT INTO plays (date, track)
+      VALUES ($1, $2)`,
+      [now, trackId]
     );
     return;
   } catch (e) {
