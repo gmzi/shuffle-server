@@ -236,7 +236,7 @@ app.get('/track-last', async function (req, res) {
   return res.json(getTrack.rows[0]);
 });
 
-app.get('/track-seeder', async function (req, res) {
+app.get('/recommendations', async function (req, res) {
   // GET REFERENCE TRACK FROM DB:
   const now = new Date();
   const day = now.getDay();
@@ -272,39 +272,37 @@ app.get('/track-seeder', async function (req, res) {
     }
   );
 
-  // const genreSeedsReq = await axios.get(
-  //   `https://api.spotify.com/v1/recommendations/available-genre-seeds`,
-  //   {
-  //     headers: { Authorization: `Bearer ${token}` },
-  //   }
-  // );
-
-  // console.log(genreSeedsReq.data);
-
   const artistIDS = trackDataReq.data.artists.map((a) => a.id);
-  console.log(artistIDS);
-  console.log(seedTrackID);
-
   const albumArtistIDS = trackDataReq.data.album.artists.map((a) => a.id);
 
-  // TRY TO MAKE THIS PASS:
+  // GET RECOMMENDATIONS FROM SPOTIFY USING THE TRACK FROM DB AS SEED:
+  const reccomendationsReq = await axios.get(
+    `https://api.spotify.com/v1/recommendations`,
+    {
+      params: {
+        limit: 4,
+        seed_artists: artistIDS,
+        seed_tracks: seedTrackID,
+      },
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'json',
+    }
+  );
 
-  // const reccomendationsReq = await axios.get(
-  //   `https://api.spotify.com/v1/recommendations`,
-  //   {
-  //     params: {
-  //       seed_genres: ['classical', 'disco', 'jazz', 'piano', 'happy'],
-  //       seed_artists: artistIDS,
-  //       seed_tracks: [seedTrackID],
-  //       // min_popularity: 50,
-  //     },
-  //     headers: { Authorization: `Bearer ${token}` },
-  //     responseType: 'json',
-  //   }
-  // );
-  // console.log(reccomendationsReq.data);
-
-  return res.send('done');
+  // TODO: REFACTOR THIS INTO A FUNCTION TO BE USED IN '/TRACKS' AND HERE
+  const readyTracks = {};
+  reccomendationsReq.data.tracks.map((track, index) => {
+    readyTracks[index] = {
+      artists: track.artists.map((a) => a.name),
+      title: track.name,
+      uri: track.uri,
+      albumUrl:
+        track.album.images.length && track.album.images[1].url
+          ? track.album.images[1].url
+          : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+    };
+  });
+  return res.json(readyTracks);
 });
 
 app.post('/track-add', async function (req, res) {
