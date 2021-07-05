@@ -11,6 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// ---------------------------------------------------
 // SPOTIFY AUTH:
 app.post('/refresh', (req, res) => {
   const refreshToken = req.body.refreshToken;
@@ -326,6 +327,7 @@ app.get('/recommendations', async function (req, res) {
 
 app.post('/track-add', async function (req, res) {
   try {
+    console.log(req.body.track);
     const now = new Date();
     const newTrack = req.body.track;
     const checkTrack = await db.query(
@@ -336,7 +338,7 @@ app.post('/track-add', async function (req, res) {
       const saveTrack = await db.query(
         `INSERT INTO tracks (uri, title, album_url, artist)
     VALUES ($1, $2, $3, $4) RETURNING id`,
-        [newTrack.uri, newTrack.title, newTrack.albumUrl, newTrack.artists]
+        [newTrack.uri, newTrack.title, newTrack.albumUrl, newTrack.artist]
       );
       trackId = saveTrack.rows[0].id;
     } else {
