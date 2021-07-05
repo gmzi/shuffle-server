@@ -243,13 +243,18 @@ app.get('/recommendations', async function (req, res) {
   const hour = now.getHours();
 
   const seedTrackQuery = await db.query(
-    `SELECT uri FROM tracks
+    `SELECT DISTINCT uri FROM tracks
       JOIN plays ON plays.track = tracks.id
         WHERE EXTRACT(hour FROM plays.date) >= ${hour - 1} 
         AND EXTRACT(hour FROM plays.date) < ${hour + 1}
         AND EXTRACT (isodow FROM plays.date) = ${day}`
   );
-  const seedTrackID = seedTrackQuery.rows[0].uri.replace('spotify:track:', '');
+
+  const fiveTrackUris = seedTrackQuery.rows.slice(-5, seedTrackQuery.length);
+
+  const fiveTrackIds = fiveTrackUris.map((r) =>
+    r.uri.replace('spotify:track:', '')
+  );
 
   // GET AUTH TOKEN FROM SPOTIFY:
   const credentials = `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`;
@@ -264,25 +269,38 @@ app.get('/recommendations', async function (req, res) {
   );
   const token = tokenReq.data.access_token;
 
-  // GET SEEDTRACK METADATA:
-  const trackDataReq = await axios.get(
-    `https://api.spotify.com/v1/tracks/${seedTrackID}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  // GET ARTIST IDS FOR EACH TRACK FROM DB:
+  const allArtistIDS = [];
+  for (let id of fiveTrackIds) {
+    const trackDataReq = await axios.get(
+      `https://api.spotify.com/v1/tracks/${id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    const trackArtists = [];
+    trackDataReq.data.artists.map((a) => {
+      trackArtists.push(a.id);
+    });
+    allArtistIDS.push(trackArtists);
+  }
 
-  const artistIDS = trackDataReq.data.artists.map((a) => a.id);
-  const albumArtistIDS = trackDataReq.data.album.artists.map((a) => a.id);
+  const oneArtistIdByTrack = allArtistIDS.map((a) => {
+    return a[0];
+  });
 
-  // GET RECOMMENDATIONS FROM SPOTIFY USING THE TRACK FROM DB AS SEED:
-  const reccomendationsReq = await axios.get(
+  const artistIdsSet = [...new Set(oneArtistIdByTrack)];
+  const artistIds = Array.from(artistIdsSet);
+  const idx = Math.floor(Math.random() * artistIds.length);
+
+  // GET RECOMMENDATIONS FROM SPOTIFY USING THE TRACKS FROM DB AS SEEDS:
+  const recommendationsReq = await axios.get(
     `https://api.spotify.com/v1/recommendations`,
     {
       params: {
         limit: 4,
-        seed_artists: artistIDS,
-        seed_tracks: seedTrackID,
+        seed_artists: artistIds[idx],
+        seed_tracks: fiveTrackIds,
       },
       headers: { Authorization: `Bearer ${token}` },
       responseType: 'json',
@@ -291,7 +309,8 @@ app.get('/recommendations', async function (req, res) {
 
   // TODO: REFACTOR THIS INTO A FUNCTION TO BE USED IN '/TRACKS' AND HERE
   const readyTracks = {};
-  reccomendationsReq.data.tracks.map((track, index) => {
+
+  recommendationsReq.data.tracks.map((track, index) => {
     readyTracks[index] = {
       artists: track.artists.map((a) => a.name),
       title: track.name,
