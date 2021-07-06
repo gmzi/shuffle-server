@@ -11,6 +11,8 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+DATABASE_URL = process.env.DATABASE_URL;
+
 // ---------------------------------------------------
 // SPOTIFY AUTH:
 app.post('/refresh', (req, res) => {
@@ -95,7 +97,6 @@ app.get('/tracks', async function (req, res) {
 
   try {
     // GATHER ALL LIKED TRACKS
-    // (Disabled for development efficiency)
 
     const spotifyApi = new SpotifyWebApi();
     spotifyApi.setAccessToken(access_token);
@@ -209,160 +210,113 @@ async function getLikedTracks(
 // DATABASE ROUTES:
 
 app.get('/count', async function (req, res) {
-  const getCount = await db.query(
-    `SELECT user_count FROM stats ORDER BY user_count DESC LIMIT 1;`
-  );
-  return res.json(getCount.rows[0]);
+  const getCount = await axios.get(`${DATABASE_URL}/count`);
+  return res.json(getCount.data);
 });
 
 app.get('/count-add', async function (req, res) {
-  const now = new Date();
-  const currentCount = await db.query(`SELECT user_count FROM stats`);
-  const newCount = currentCount.rows.length + 1;
-  const addCount = await db.query(
-    `INSERT INTO stats (user_count,
-      login_at)
-  VALUES ($1, $2)
-  RETURNING user_count, login_at`,
-    [newCount, now]
-  );
-  return res.json(addCount.rows[0]);
+  const call = await axios.get(`${DATABASE_URL}/count-add`);
+  return res.json(call.data);
 });
 
 app.get('/track-last', async function (req, res) {
-  const getTrack = await db.query(
-    `SELECT uri, title, album_url, artist
-      FROM tracks ORDER BY id DESC LIMIT 1`
-  );
-  return res.json(getTrack.rows[0]);
+  const call = await axios.get(`${DATABASE_URL}/track-last`);
+  return res.json(call.data);
 });
 
 app.get('/recommendations', async function (req, res) {
-  // GET REFERENCE TRACK FROM DB:
-  const now = new Date();
-  const day = now.getDay();
-  const hour = now.getHours();
+  try {
+    // GET REFERENCE TRACK FROM DB:
+    const seedTrackQuery = await axios.get(`${DATABASE_URL}/recommendations`);
 
-  const seedTrackQuery = await db.query(
-    `SELECT DISTINCT uri FROM tracks
-      JOIN plays ON plays.track = tracks.id
-        WHERE EXTRACT(hour FROM plays.date) >= ${hour - 1} 
-        AND EXTRACT(hour FROM plays.date) < ${hour + 1}
-        AND EXTRACT (isodow FROM plays.date) = ${day}`
-  );
+    const fiveTrackUris = seedTrackQuery.data.slice(-5, seedTrackQuery.length);
 
-  const fiveTrackUris = seedTrackQuery.rows.slice(-5, seedTrackQuery.length);
+    const fiveTrackIds = fiveTrackUris.map((r) =>
+      r.uri.replace('spotify:track:', '')
+    );
 
-  const fiveTrackIds = fiveTrackUris.map((r) =>
-    r.uri.replace('spotify:track:', '')
-  );
-
-  // GET AUTH TOKEN FROM SPOTIFY:
-  const credentials = `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`;
-  const encodedCreds = Buffer.from(credentials).toString('base64');
-  const tokenReq = await axios.post(
-    'https://accounts.spotify.com/api/token',
-    'grant_type=client_credentials',
-    {
-      headers: { Authorization: `Basic ${encodedCreds}` },
-      responseType: 'json',
-    }
-  );
-  const token = tokenReq.data.access_token;
-
-  // GET ARTIST IDS FOR EACH TRACK FROM DB:
-  const allArtistIDS = [];
-  for (let id of fiveTrackIds) {
-    const trackDataReq = await axios.get(
-      `https://api.spotify.com/v1/tracks/${id}`,
+    // GET AUTH TOKEN FROM SPOTIFY:
+    const credentials = `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`;
+    const encodedCreds = Buffer.from(credentials).toString('base64');
+    const tokenReq = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      'grant_type=client_credentials',
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Basic ${encodedCreds}` },
+        responseType: 'json',
       }
     );
-    const trackArtists = [];
-    trackDataReq.data.artists.map((a) => {
-      trackArtists.push(a.id);
-    });
-    allArtistIDS.push(trackArtists);
-  }
+    const token = tokenReq.data.access_token;
 
-  const oneArtistIdByTrack = allArtistIDS.map((a) => {
-    return a[0];
-  });
-
-  const artistIdsSet = [...new Set(oneArtistIdByTrack)];
-  const artistIds = Array.from(artistIdsSet);
-  const idx = Math.floor(Math.random() * artistIds.length);
-
-  // GET RECOMMENDATIONS FROM SPOTIFY USING THE TRACKS FROM DB AS SEEDS:
-  const recommendationsReq = await axios.get(
-    `https://api.spotify.com/v1/recommendations`,
-    {
-      params: {
-        limit: 4,
-        seed_artists: artistIds[idx],
-        seed_tracks: fiveTrackIds,
-      },
-      headers: { Authorization: `Bearer ${token}` },
-      responseType: 'json',
+    // GET ARTIST IDS FOR EACH TRACK FROM DB:
+    const allArtistIDS = [];
+    for (let id of fiveTrackIds) {
+      const trackDataReq = await axios.get(
+        `https://api.spotify.com/v1/tracks/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const trackArtists = [];
+      trackDataReq.data.artists.map((a) => {
+        trackArtists.push(a.id);
+      });
+      allArtistIDS.push(trackArtists);
     }
-  );
 
-  // TODO: REFACTOR THIS INTO A FUNCTION TO BE USED IN '/TRACKS' AND HERE
-  const readyTracks = {};
+    const oneArtistIdByTrack = allArtistIDS.map((a) => {
+      return a[0];
+    });
 
-  recommendationsReq.data.tracks.map((track, index) => {
-    readyTracks[index] = {
-      artists: track.artists.map((a) => a.name),
-      title: track.name,
-      uri: track.uri,
-      albumUrl:
-        track.album.images.length && track.album.images[1].url
-          ? track.album.images[1].url
-          : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
-    };
-  });
-  return res.json(readyTracks);
+    const artistIdsSet = [...new Set(oneArtistIdByTrack)];
+    const artistIds = Array.from(artistIdsSet);
+    const idx = Math.floor(Math.random() * artistIds.length);
+
+    // GET RECOMMENDATIONS FROM SPOTIFY USING THE TRACKS FROM DB AS SEEDS:
+    const recommendationsReq = await axios.get(
+      `https://api.spotify.com/v1/recommendations`,
+      {
+        params: {
+          limit: 4,
+          seed_artists: artistIds[idx],
+          seed_tracks: fiveTrackIds,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'json',
+      }
+    );
+
+    // TODO: REFACTOR THIS INTO A FUNCTION TO BE USED IN '/TRACKS' AND HERE
+    const readyTracks = {};
+
+    recommendationsReq.data.tracks.map((track, index) => {
+      readyTracks[index] = {
+        artists: track.artists.map((a) => a.name),
+        title: track.name,
+        uri: track.uri,
+        albumUrl:
+          track.album.images.length && track.album.images[1].url
+            ? track.album.images[1].url
+            : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+      };
+    });
+    return res.json(readyTracks);
+  } catch (e) {
+    console.log('problem fetching recommendations', e);
+    return;
+  }
 });
 
 app.post('/track-add', async function (req, res) {
   try {
-    const now = new Date();
-    const newTrack = req.body.track;
-    const checkTrack = await db.query(
-      `SELECT id FROM tracks WHERE uri LIKE '${newTrack.uri}'`
-    );
-    let trackId;
-    if (!checkTrack.rows[0]) {
-      const saveTrack = await db.query(
-        `INSERT INTO tracks (uri, title, album_url, artist)
-    VALUES ($1, $2, $3, $4) RETURNING id`,
-        [newTrack.uri, newTrack.title, newTrack.albumUrl, newTrack.artists]
-      );
-      trackId = saveTrack.rows[0].id;
-    } else {
-      trackId = checkTrack.rows[0].id;
-    }
-    const savePlay = await db.query(
-      `INSERT INTO plays (date, track)
-      VALUES ($1, $2)`,
-      [now, trackId]
-    );
-    return;
+    const track = req.body.track;
+    const save = await axios.post(`${DATABASE_URL}/track-add`, {
+      track: track,
+    });
+    return res.json(save.data);
   } catch (e) {
     console.log('failed saving track in db', e);
   }
-});
-
-app.get('/lali', async function (req, res) {
-  try {
-    const ver = await axios.get('https://db-shuffle.herokuapp.com/count');
-    console.log(ver.data);
-    return res.send('done');
-  } catch (e) {
-    console.log(e);
-  }
-  // return res.send('hola como andas');
 });
 
 app.listen(3001);
