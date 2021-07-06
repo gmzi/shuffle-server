@@ -18,7 +18,8 @@ app.get('/api/hola', (req, res) => {
 });
 
 app.get('/api/count', async function (req, res) {
-  const getCount = await axios.get(`${DATABASE_URL}/count`);
+  //   const getCount = await axios.get(`${DATABASE_URL}/count`);
+  const getCount = await axios.get(`https://db-shuffle.herokuapp.com/count`);
   return res.json(getCount.data);
 });
 
