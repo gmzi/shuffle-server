@@ -17,4 +17,9 @@ app.get('/api/hola', (req, res) => {
   res.end(`Hola flaquito como te va`);
 });
 
+app.get('/api/count', async function (req, res) {
+  const getCount = await axios.get(`${DATABASE_URL}/count`);
+  return res.json(getCount.data);
+});
+
 module.exports = app;
