@@ -42,9 +42,18 @@ app.get('/api/count', async function (req, res) {
   return res.json(getCount.data);
 });
 
-app.get('/count-add', async function (req, res) {
+app.get('/api/count-add', async function (req, res) {
   const call = await axios.get(`${DATABASE_URL}/count-add`);
   return res.json(call.data);
+});
+
+app.get('/api/track-last', async function (req, res) {
+  const call = await axios.get(`${DATABASE_URL}/track-last`);
+  return res.json(call.data);
+});
+
+app.get('/api/hi', function (req, res) {
+  return res.send('hi how are you doing?');
 });
 
 const port = process.env.PORT || 3002;
