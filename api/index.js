@@ -39,8 +39,7 @@ app.get('/api/hola', (req, res) => {
 
 app.get('/api/count', async function (req, res) {
   const getCount = await axios.get(`${DATABASE_URL}/count`);
-  //   return res.json(getCount.data);
-  return res.json({ reached: 'end' });
+  return res.json(getCount.data);
 });
 
 app.get('/count-add', async function (req, res) {
