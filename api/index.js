@@ -11,10 +11,10 @@ app.get('/api/item/:slug', (req, res) => {
   res.end(`Item: ${slug}`);
 });
 
-app.get('/hola', function (req, res) {
+app.get('/hola', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-  res.end('como andas flaquito');
+  res.end(`Hola flaquito como te va`);
 });
 
 module.exports = app;
