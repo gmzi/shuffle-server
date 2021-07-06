@@ -319,4 +319,8 @@ app.post('/track-add', async function (req, res) {
   }
 });
 
+app.get('/hi', function (req, res) {
+  return res.send('hi how are you doing?');
+});
+
 app.listen(3001);
