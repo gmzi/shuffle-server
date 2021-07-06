@@ -11,4 +11,8 @@ app.get('/api/item/:slug', (req, res) => {
   res.end(`Item: ${slug}`);
 });
 
+app.get('/hola', function (req, res) {
+  res.end('como andas flaquito');
+});
+
 module.exports = app;
