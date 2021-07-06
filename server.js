@@ -354,8 +354,15 @@ app.post('/track-add', async function (req, res) {
   }
 });
 
-app.get('/hola', function (req, res) {
-  return res.send('hola como andas');
+app.get('/lali', async function (req, res) {
+  try {
+    const ver = await axios.get('https://db-shuffle.herokuapp.com/count');
+    console.log(ver.data);
+    return res.send('done');
+  } catch (e) {
+    console.log(e);
+  }
+  // return res.send('hola como andas');
 });
 
 app.listen(3001);
