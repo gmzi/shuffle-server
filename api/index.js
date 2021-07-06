@@ -12,6 +12,8 @@ app.get('/api/item/:slug', (req, res) => {
 });
 
 app.get('/hola', function (req, res) {
+  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
   res.end('como andas flaquito');
 });
 
