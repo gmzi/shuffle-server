@@ -46,7 +46,6 @@ app.post('/api/refresh', (req, res) => {
 });
 
 let token;
-let allMyTracks;
 
 app.post('/api/login', (req, res) => {
   const code = req.body.code;
@@ -60,7 +59,6 @@ app.post('/api/login', (req, res) => {
     .authorizationCodeGrant(code)
     .then(async (data) => {
       token = data.body.access_token;
-      allMyTracks = await requestTracks(token);
       res.json({
         accessToken: data.body.access_token,
         refreshToken: data.body.refresh_token,
@@ -100,7 +98,12 @@ app.get('/api/logout', (req, res) => {
 });
 
 app.get('/api/tracks', async function (req, res) {
-  return res.json(allMyTracks);
+  const callback = req.query.callback;
+  console.log(callback);
+  
+  return res.jsonp(foo());
+  const allTracks = await requestTracks(token);
+  return res.send(foo({ here: 'is', here: true, tracks: allTracks }));
 });
 
 app.get('/api/new-tracks', async function (req, res) {
