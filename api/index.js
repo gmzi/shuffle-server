@@ -60,7 +60,7 @@ app.post('/api/login', (req, res) => {
     .authorizationCodeGrant(code)
     .then(async (data) => {
       token = data.body.access_token;
-      allMyTracks = await requestTracks(token);
+      // allMyTracks = await requestTracks(token);
       res.json({
         accessToken: data.body.access_token,
         refreshToken: data.body.refresh_token,
