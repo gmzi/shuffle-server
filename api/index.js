@@ -425,6 +425,10 @@ app.get('/api/hi', function (req, res) {
   return res.send('hi how are you doing?');
 });
 
+app.get('/api/fixCors', function (req, res) {
+  return res.send('yeah you are in fixCors branch');
+});
+
 const port = process.env.PORT || 3002;
 
 app.listen(port, () => console.log(`Server running on ${port}`));
