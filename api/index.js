@@ -96,6 +96,7 @@ app.get('/api/token', async function (req, res) {
 
 app.get('/api/logout', (req, res) => {
   token = '';
+  allMyTracks = [];
   return res.json({ token });
 });
 
@@ -165,6 +166,7 @@ app.get('/api/tracks', async function (req, res) {
     //           : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
     //     };
     //   });
+    console.log('corre conla nueva');
     return res.json(allMyTracks);
   } catch (e) {
     console.log('server failed gathering tracks', e);
