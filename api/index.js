@@ -165,11 +165,7 @@ app.get('/api/tracks', async function (req, res) {
     });
     return res.json(readyTracks);
   } catch (e) {
-    console.log(
-      'server failed gathering tracks',
-      e.response.status,
-      e.response.headers
-    );
+    console.log('server failed gathering tracks', e);
   }
 });
 
