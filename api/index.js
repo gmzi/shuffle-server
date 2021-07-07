@@ -100,77 +100,35 @@ app.get('/api/logout', (req, res) => {
   return res.json({ token });
 });
 
+app.get('/api/old-tracks', async function (req, res) {
+  console.log(allMyTracks);
+  return res.json(allMyTracks);
+});
+
 app.get('/api/tracks', async function (req, res) {
-  // const tracks = [];
-
-  // const access_token = token;
-
-  try {
-    //   // GATHER ALL LIKED TRACKS
-
-    //   const spotifyApi = new SpotifyWebApi();
-    //   spotifyApi.setAccessToken(access_token);
-
-    //   const likedTracks = await getLikedTracks(spotifyApi);
-
-    //   // POUR LIKED TRACKS IN MAIN LIST:
-    //   for (let item of likedTracks) {
-    //     tracks.push(item.track);
-    //   }
-
-    //   // GATHER TRACKS FROM ALL PLAYLISTS:
-    //   const playlists = await getPlaylists(access_token);
-
-    //   const promises = {};
-
-    //   for (let id of playlists) {
-    //     promises[id] = axios.get(
-    //       `https://api.spotify.com/v1/playlists/${id}/tracks`,
-    //       {
-    //         headers: { Authorization: `Bearer ${access_token}` },
-    //         responseType: 'json',
-    //       }
-    //     );
-    //   }
-
-    //   const allTracksRaw = {};
-
-    //   for (let key in promises) {
-    //     allTracksRaw[key] = await promises[key];
-    //   }
-
-    //   const items = {};
-
-    //   for (let track in allTracksRaw) {
-    //     items[track] = allTracksRaw[track].data.items;
-    //   }
-
-    //   // POUR PLAYLISTS TRACKS IN MAIN LIST:
-    //   for (let key in items) {
-    //     for (let obj in items[key]) {
-    //       tracks.push(items[key][obj].track);
-    //     }
-    //   }
-
-    //   // PREPARE MAIN LIST TO BE SENT TO CLIENT:
-    //   const readyTracks = {};
-
-    //   tracks.map((track, index) => {
-    //     readyTracks[index] = {
-    //       artists: track.artists.map((a) => a.name),
-    //       title: track.name,
-    //       uri: track.uri,
-    //       albumUrl:
-    //         track.album.images.length && track.album.images[1].url
-    //           ? track.album.images[1].url
-    //           : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
-    //     };
-    //   });
-    console.log('corre conla nueva');
-    return res.json(allMyTracks);
-  } catch (e) {
-    console.log('server failed gathering tracks', e);
-  }
+  const trackie = {
+    200: {
+      artists: ['Javiera Mena'],
+      title: 'Dentro de ti',
+      uri: 'spotify:track:5ydEutdJtu94qLezDIH7RB',
+      albumUrl:
+        'https://i.scdn.co/image/ab67616d00001e022ba70b464a69faa4d72cc9d4',
+    },
+    201: {
+      artists: [
+        'Henry Purcell',
+        'Joyce DiDonato',
+        'Maxim Emelyanychev',
+        "Il Pomo D'oro",
+      ],
+      title:
+        'Purcell: Dido and Aeneas, Z. 626, Act 3: "Thy hand, Belinda... When I am laid in earth" (Dido)',
+      uri: 'spotify:track:1JqyC4xEmgwQ82yvkAEow1',
+      albumUrl:
+        'https://i.scdn.co/image/ab67616d00001e02b730042436ce2b502d6ffae5',
+    },
+  };
+  return res.json(trackie);
 });
 
 // ---------------------------------------------------------------------
