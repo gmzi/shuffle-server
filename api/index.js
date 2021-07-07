@@ -60,7 +60,7 @@ app.post('/api/login', (req, res) => {
     .authorizationCodeGrant(code)
     .then(async (data) => {
       token = data.body.access_token;
-      // allMyTracks = await requestTracks(token);
+      allMyTracks = await requestTracks(token);
       res.json({
         accessToken: data.body.access_token,
         refreshToken: data.body.refresh_token,
@@ -84,7 +84,6 @@ app.get('/api/token', async function (req, res) {
         responseType: 'json',
       }
     );
-
     return res.json(spotiToken.data);
   } catch (e) {
     console.log('token request failed', e);
@@ -100,12 +99,11 @@ app.get('/api/logout', (req, res) => {
   return res.json({ token });
 });
 
-app.get('/api/old-tracks', async function (req, res) {
-  console.log(allMyTracks);
+app.get('/api/tracks', async function (req, res) {
   return res.json(allMyTracks);
 });
 
-app.get('/api/tracks', async function (req, res) {
+app.get('/api/new-tracks', async function (req, res) {
   const trackie = {
     200: {
       artists: ['Javiera Mena'],
