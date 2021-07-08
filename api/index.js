@@ -97,11 +97,10 @@ app.get('/api/logout', (req, res) => {
   return res.json({ token });
 });
 
-app.post('/api/tracks', async function (req, res) {
+app.get('/api/tracks', async function (req, res) {
   const tracks = [];
 
-  // const access_token = token;
-  const access_token = req.body.tokenToPost;
+  const access_token = token;
 
   try {
     // GATHER ALL LIKED TRACKS
