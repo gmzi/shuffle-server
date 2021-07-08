@@ -102,7 +102,6 @@ app.post('/api/tracks', async function (req, res) {
 
   // const access_token = token;
   const access_token = req.body.tokenToPost;
-  console.log(access_token);
 
   try {
     // GATHER ALL LIKED TRACKS
@@ -154,22 +153,22 @@ app.post('/api/tracks', async function (req, res) {
     // PREPARE MAIN LIST TO BE SENT TO CLIENT:
     const readyTracks = {};
 
-    tracks.map((track, index) => {
-      readyTracks[index] = {
-        artists: track.artists.map((a) => a.name),
-        title: track.name,
-        uri: track.uri,
-        albumUrl:
-          track.album.images.length && track.album.images[1].url
-            ? track.album.images[1].url
-            : // : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
-              'no-image',
-      };
-    });
+    // tracks.map((track, index) => {
+    //   readyTracks[index] = {
+    //     artists: track.artists.map((a) => a.name),
+    //     title: track.name,
+    //     uri: track.uri,
+    //     albumUrl:
+    //       track.album.images.length && track.album.images[1].url
+    //         ? track.album.images[1].url
+    //         : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+    //   };
+    // });
 
     // res.setHeader('Content-Type', 'application/json');
     // res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-    return res.json(readyTracks);
+    // return res.json(readyTracks);
+    return res.json(tracks);
   } catch (e) {
     console.log('server failed gathering tracks', e);
   }
