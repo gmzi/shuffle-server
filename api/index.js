@@ -116,38 +116,38 @@ app.get('/api/tracks', async function (req, res) {
     }
 
     // GATHER TRACKS FROM ALL PLAYLISTS:
-    const playlists = await getPlaylists(access_token);
+    // const playlists = await getPlaylists(access_token);
 
-    const promises = {};
+    // const promises = {};
 
-    for (let id of playlists) {
-      promises[id] = axios.get(
-        `https://api.spotify.com/v1/playlists/${id}/tracks`,
-        {
-          headers: { Authorization: `Bearer ${access_token}` },
-          responseType: 'json',
-        }
-      );
-    }
+    // for (let id of playlists) {
+    //   promises[id] = axios.get(
+    //     `https://api.spotify.com/v1/playlists/${id}/tracks`,
+    //     {
+    //       headers: { Authorization: `Bearer ${access_token}` },
+    //       responseType: 'json',
+    //     }
+    //   );
+    // }
 
-    const allTracksRaw = {};
+    // const allTracksRaw = {};
 
-    for (let key in promises) {
-      allTracksRaw[key] = await promises[key];
-    }
+    // for (let key in promises) {
+    //   allTracksRaw[key] = await promises[key];
+    // }
 
-    const items = {};
+    // const items = {};
 
-    for (let track in allTracksRaw) {
-      items[track] = allTracksRaw[track].data.items;
-    }
+    // for (let track in allTracksRaw) {
+    //   items[track] = allTracksRaw[track].data.items;
+    // }
 
-    // POUR PLAYLISTS TRACKS IN MAIN LIST:
-    for (let key in items) {
-      for (let obj in items[key]) {
-        tracks.push(items[key][obj].track);
-      }
-    }
+    // // POUR PLAYLISTS TRACKS IN MAIN LIST:
+    // for (let key in items) {
+    //   for (let obj in items[key]) {
+    //     tracks.push(items[key][obj].track);
+    //   }
+    // }
 
     // PREPARE MAIN LIST TO BE SENT TO CLIENT:
     const readyTracks = {};
