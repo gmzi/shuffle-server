@@ -165,7 +165,7 @@ app.get('/api/tracks', async function (req, res) {
     });
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-    return res.end(readyTracks);
+    return res.json(readyTracks);
   } catch (e) {
     console.log('server failed gathering tracks', e);
   }
