@@ -97,10 +97,12 @@ app.get('/api/logout', (req, res) => {
   return res.json({ token });
 });
 
-app.get('/api/tracks', async function (req, res) {
+app.post('/api/tracks', async function (req, res) {
   const tracks = [];
 
-  const access_token = token;
+  // const access_token = token;
+  const access_token = req.body.tokenToPost;
+  console.log(access_token);
 
   try {
     // GATHER ALL LIKED TRACKS
@@ -163,8 +165,8 @@ app.get('/api/tracks', async function (req, res) {
             : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
       };
     });
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
+    // res.setHeader('Content-Type', 'application/json');
+    // res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
     return res.json(readyTracks);
   } catch (e) {
     console.log('server failed gathering tracks', e);
