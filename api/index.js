@@ -162,9 +162,11 @@ app.post('/api/tracks', async function (req, res) {
         albumUrl:
           track.album.images.length && track.album.images[1].url
             ? track.album.images[1].url
-            : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+            : // : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+              'no-image',
       };
     });
+
     // res.setHeader('Content-Type', 'application/json');
     // res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
     return res.json(readyTracks);
