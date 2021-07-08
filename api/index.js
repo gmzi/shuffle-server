@@ -163,7 +163,9 @@ app.get('/api/tracks', async function (req, res) {
             : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
       };
     });
-    return res.json(readyTracks);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
+    return res.end(readyTracks);
   } catch (e) {
     console.log('server failed gathering tracks', e);
   }
