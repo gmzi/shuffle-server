@@ -6,7 +6,8 @@
 
 // const DATABASE_URL = process.env.DATABASE_URL;
 
-require('dotenv').config();
+// require('dotenv').config();
+require('dotenv').config({ path: '../.env' })
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -86,6 +87,7 @@ app.get('/api/token', async function (req, res) {
     return res.json(spotiToken.data);
   } catch (e) {
     console.log('token request failed', e);
+    return res.json({ error: 'token request failed' })
   }
 });
 
@@ -104,7 +106,6 @@ app.get('/api/tracks', async function (req, res) {
 
   try {
     // GATHER ALL LIKED TRACKS
-
     const spotifyApi = new SpotifyWebApi();
     spotifyApi.setAccessToken(access_token);
 
@@ -116,58 +117,58 @@ app.get('/api/tracks', async function (req, res) {
     }
 
     // GATHER TRACKS FROM ALL PLAYLISTS:
-    // const playlists = await getPlaylists(access_token);
+    const playlists = await getPlaylists(access_token);
 
-    // const promises = {};
+    const promises = {};
 
-    // for (let id of playlists) {
-    //   promises[id] = axios.get(
-    //     `https://api.spotify.com/v1/playlists/${id}/tracks`,
-    //     {
-    //       headers: { Authorization: `Bearer ${access_token}` },
-    //       responseType: 'json',
-    //     }
-    //   );
-    // }
+    for (let id of playlists) {
+      promises[id] = axios.get(
+        `https://api.spotify.com/v1/playlists/${id}/tracks`,
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
+          responseType: 'json',
+        }
+      );
+    }
 
-    // const allTracksRaw = {};
+    const allTracksRaw = {};
 
-    // for (let key in promises) {
-    //   allTracksRaw[key] = await promises[key];
-    // }
+    for (let key in promises) {
+      allTracksRaw[key] = await promises[key];
+    }
 
-    // const items = {};
+    const items = {};
 
-    // for (let track in allTracksRaw) {
-    //   items[track] = allTracksRaw[track].data.items;
-    // }
+    for (let track in allTracksRaw) {
+      items[track] = allTracksRaw[track].data.items;
+    }
 
     // // POUR PLAYLISTS TRACKS IN MAIN LIST:
-    // for (let key in items) {
-    //   for (let obj in items[key]) {
-    //     tracks.push(items[key][obj].track);
-    //   }
-    // }
+    for (let key in items) {
+      for (let obj in items[key]) {
+        tracks.push(items[key][obj].track);
+      }
+    }
 
     // PREPARE MAIN LIST TO BE SENT TO CLIENT:
     const readyTracks = {};
 
-    // tracks.map((track, index) => {
-    //   readyTracks[index] = {
-    //     artists: track.artists.map((a) => a.name),
-    //     title: track.name,
-    //     uri: track.uri,
-    //     albumUrl:
-    //       track.album.images.length && track.album.images[1].url
-    //         ? track.album.images[1].url
-    //         : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
-    //   };
-    // });
+    tracks.map((track, index) => {
+      readyTracks[index] = {
+        artists: track.artists.map((a) => a.name),
+        title: track.name,
+        uri: track.uri,
+        albumUrl:
+          track.album.images.length && track.album.images[1].url
+            ? track.album.images[1].url
+            : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
+      };
+    });
 
     // res.setHeader('Content-Type', 'application/json');
     // res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
     // return res.json(readyTracks);
-    return res.json(tracks);
+    return res.json(readyTracks);
   } catch (e) {
     console.log('server failed gathering tracks', e);
   }
@@ -352,6 +353,12 @@ app.get('/api/recommendations', async function (req, res) {
 app.get('/api/hi', function (req, res) {
   return res.send('hi how are you doing?');
 });
+
+// app.get('/api/process', function (req, res) {
+//   const val = process.env.CLIENT_ID;
+//   console.log(val)
+//   return res.json(val)
+// })
 
 const port = process.env.PORT || 3002;
 
