@@ -12,8 +12,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 DATABASE_URL = process.env.DATABASE_URL;
 
-let token;
-
 // ---------------------------------------------------
 // SPOTIFY AUTH and local LOGOUT:
 app.post('/api/refresh', (req, res) => {
@@ -50,7 +48,6 @@ app.post('/api/login', (req, res) => {
   spotifyApi
     .authorizationCodeGrant(code)
     .then((data) => {
-      token = data.body.access_token;
       res.json({
         accessToken: data.body.access_token,
         refreshToken: data.body.refresh_token,
@@ -242,81 +239,3 @@ const port = process.env.PORT || 3002;
 app.listen(port, () => console.log(`Server running on ${port}`));
 
 module.exports = app;
-
-
-// -------------------------------------------------------------------------------------------------------------------
-/*
-app.get('/api/tracks', async function (req, res) {
-  const tracks = [];
-  const access_token = token;
-
-  try {
-    // GATHER ALL LIKED TRACKS
-    const spotifyApi = new SpotifyWebApi();
-    spotifyApi.setAccessToken(access_token);
-    const likedTracks = await getLikedTracks(spotifyApi);
-
-    // POUR LIKED TRACKS IN MAIN LIST:
-    for (let item of likedTracks) {
-      tracks.push(item.track);
-    }
-
-    // GATHER TRACKS FROM ALL PLAYLISTS:
-    const playlists = await getPlaylists(access_token);
-
-    const promises = {};
-
-    for (let id of playlists) {
-      promises[id] = axios.get(
-        `https://api.spotify.com/v1/playlists/${id}/tracks`,
-        {
-          headers: { Authorization: `Bearer ${access_token}` },
-          responseType: 'json',
-        }
-      );
-    }
-
-    const allTracksRaw = {};
-
-    for (let key in promises) {
-      allTracksRaw[key] = await promises[key];
-    }
-
-    const items = {};
-
-    for (let track in allTracksRaw) {
-      items[track] = allTracksRaw[track].data.items;
-    }
-
-    // POUR PLAYLISTS TRACKS IN MAIN LIST:
-    for (let key in items) {
-      for (let obj in items[key]) {
-        tracks.push(items[key][obj].track);
-      }
-    }
-
-    // PREPARE MAIN LIST TO BE SENT TO CLIENT:
-    const readyTracks = {};
-
-    tracks.map((track, index) => {
-      readyTracks[index] = {
-        artists: track.artists.map((a) => a.name),
-        title: track.name,
-        uri: track.uri,
-        albumUrl:
-          track.album.images.length && track.album.images[1].url
-            ? track.album.images[1].url
-            : 'https://thumbs.dreamstime.com/b/spotify-logo-white-background-editorial-illustrative-printed-white-paper-logo-eps-vector-spotify-logo-white-background-206665979.jpg',
-      };
-    });
-
-    // res.setHeader('Content-Type', 'application/json');
-    // res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-    // return res.json(readyTracks);
-    return res.json(tracks);
-  } catch (e) {
-    console.log('server failed gathering tracks', e);
-  }
-});
-
-*/
