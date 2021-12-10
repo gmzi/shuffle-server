@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 DATABASE_URL = process.env.DATABASE_URL;
 
-let token;
+// let token;
 
 // ---------------------------------------------------
 // SPOTIFY AUTH and local LOGOUT:
@@ -50,7 +50,7 @@ app.post('/api/login', (req, res) => {
   spotifyApi
     .authorizationCodeGrant(code)
     .then((data) => {
-      token = data.body.access_token;
+      // token = data.body.access_token;
       res.json({
         accessToken: data.body.access_token,
         refreshToken: data.body.refresh_token,
