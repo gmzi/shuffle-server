@@ -59,6 +59,12 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+
+app.get('/api/count', async function (req, res) {
+  const getCount = await axios.get(`${DATABASE_URL}/count`);
+  return res.json(getCount.data);
+});
+
 // app.get('/api/token', async function (req, res) {
 //   const credentials = `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`;
 //   const encodedCreds = Buffer.from(credentials).toString('base64');
@@ -232,6 +238,7 @@ app.get('/api/hola', (req, res) => {
 app.get('/api/hi', function (req, res) {
   return res.send('hi how are you doing?');
 });
+
 
 
 const port = process.env.PORT || 3002;
