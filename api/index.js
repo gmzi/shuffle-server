@@ -14,28 +14,6 @@ DATABASE_URL = process.env.DATABASE_URL;
 
 // ---------------------------------------------------
 // SPOTIFY AUTH and local LOGOUT:
-app.post('/api/refresh', (req, res) => {
-  const refreshToken = req.body.refreshToken;
-  const spotifyApi = new SpotifyWebApi({
-    redirectUri: process.env.REDIRECT_URI,
-    clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    refreshToken,
-  });
-
-  spotifyApi
-    .refreshAccessToken()
-    .then((data) => {
-      res.json({
-        accessToken: data.body.access_token,
-        expiresIn: data.body.expires_in,
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.sendStatus(400);
-    });
-});
 
 app.post('/api/login', (req, res) => {
   const code = req.body.code;
@@ -59,10 +37,27 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+app.post('/api/refresh', (req, res) => {
+  const refreshToken = req.body.refreshToken;
+  const spotifyApi = new SpotifyWebApi({
+    redirectUri: process.env.REDIRECT_URI,
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    refreshToken,
+  });
 
-app.get('/api/count', async function (req, res) {
-  const getCount = await axios.get(`${DATABASE_URL}/count`);
-  return res.json(getCount.data);
+  spotifyApi
+    .refreshAccessToken()
+    .then((data) => {
+      res.json({
+        accessToken: data.body.access_token,
+        expiresIn: data.body.expires_in,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.sendStatus(400);
+    });
 });
 
 // app.get('/api/token', async function (req, res) {
@@ -92,15 +87,6 @@ app.get('/api/count', async function (req, res) {
 //     return res.status(403).send({ logout: 'failed' })
 //   }
 // });
-
-// ---------------------------------------------------------------------
-// USER LIBRARIES AND TRACKS:
-
-app.post('/api/playlists', async function (req, res) {
-  // If needed, copy /playlists route from heroku server
-  const msg = { result: "derived to keroku server" }
-  return res.json(msg);
-});
 
 // ---------------------------------------------------------------------
 // REQUESTS TO DATABASE MANAGER
@@ -216,7 +202,7 @@ app.get('/api/recommendations', async function (req, res) {
 });
 
 // -------------------------------------------------------------------------------------
-// MONITOR ROUTES
+// TEST ROUTES
 
 app.get('/api', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
@@ -229,17 +215,9 @@ app.get('/api/item/:slug', (req, res) => {
   res.end(`Item: ${slug}`);
 });
 
-app.get('/api/hola', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-  res.end(`Hola flaquito como te va`);
-});
-
 app.get('/api/hi', function (req, res) {
   return res.send('hi how are you doing?');
 });
-
-
 
 const port = process.env.PORT || 3002;
 
