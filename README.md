@@ -1,4 +1,4 @@
-Node-Express server for [Shuffle_app](link)
+Node-Express server for [Shuffle](https://github.com/gmzi/shuffle-client)
 
 # Usage:
 1- set process.env.REDIRECT_URI to client url. 
