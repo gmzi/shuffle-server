@@ -178,7 +178,6 @@ app.get('/api/recommendations', async function (req, res) {
         }
       );
 
-      // TODO: REFACTOR THIS INTO A HELPER FUNCTION (TO BE USED ALSO IN /playlists and /likedtracks)
       const readyTracks = {};
       recommendationsReq.data.tracks.map((track, index) => {
         readyTracks[index] = {
